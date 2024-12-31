@@ -1,0 +1,42 @@
+{
+    "dataset_name": "mimic_iii",
+    "encoder_name": "MN_BT",
+    "seed": 42,
+    "folders": [0],
+    "test_percentage": 0.25,
+    "val_percentage": 0.25,
+    "repeat": 1,
+    "n_cores": 10,
+      
+    "data_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/dataset",
+    "results_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/results",
+    "saved_model_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/saved_models",
+
+    "valid_bp_ranges": {
+        "up_sbp" : 220,
+        "low_sbp" : 60,
+        "up_dbp" : 140,
+        "low_dbp" : 30
+    },
+  
+    "prepare_datasets_params": {
+      "n_input": 1000,
+      "win_len": 8,
+      "overlap": 0.5,
+      "signal_freq": 125,
+      "filter_order": 2
+    },
+    "encoder_params": {
+      "rep_dimension": 125,
+      "n_dense_units": 512,
+      "n_dense_layers": 2,
+      "alpha": 1.0,
+      "depth": 3,
+      "n_steps": 1000,
+      "epochs": 10,
+      "batch_size": 128,
+      "optimizer": {
+        "momentum": 0.9
+      }
+    }
+  }
