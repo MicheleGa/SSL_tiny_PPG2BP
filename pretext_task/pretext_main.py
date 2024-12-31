@@ -127,7 +127,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='SSL BP estimation - Pretext Stage')
         
     # Configuration files
-    parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='Pretext_config_mimic_iii.json')
+    parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='pretext_config_mimic_iii.json')
     
     args = parser.parse_args()
     

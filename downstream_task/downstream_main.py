@@ -60,7 +60,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description='SSL BP estimation - Downstream Stage')
         
     # configuration files
-    parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='Downstream_config_mimic_iii.json')
+    parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='downstream_config_mimic_iii.json')
     
     args = parser.parse_args()
     

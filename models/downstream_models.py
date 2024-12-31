@@ -137,7 +137,7 @@ class CnnLstmModel():
         K.clear_session()
         tf.compat.v1.reset_default_graph()
         
-        return  np.mean(total_sbp_mae), np.mean(total_dbp_mae), memory_usage_mb, inference_latency        
+        return  [np.mean(total_sbp_mae), np.std(total_sbp_mae)], [np.mean(total_dbp_mae), np.std(total_dbp_mae)], memory_usage_mb, inference_latency        
             
 
 class Encoder_MLP():
@@ -268,4 +268,4 @@ class Encoder_MLP():
         K.clear_session()
         tf.compat.v1.reset_default_graph()
         
-        return  np.mean(total_sbp_mae), np.mean(total_dbp_mae), memory_usage_mb, inference_latency      
+        return  [np.mean(total_sbp_mae), np.std(total_sbp_mae)], [np.mean(total_dbp_mae), np.std(total_dbp_mae)], memory_usage_mb, inference_latency      

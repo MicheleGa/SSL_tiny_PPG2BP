@@ -30,7 +30,7 @@
       
   "cnn_lstm_params": {
     "n_steps": 875,
-    "epochs": 5,
+    "epochs": 100,
     "batch_size": 256,
     "optimizer": {
       "learning_rate": 0.001
@@ -53,12 +53,11 @@
   },
 
   "encoder_params": {
-    "rep_dimension": 125,
     "n_dense_units": 512,
     "n_dense_layers": 2,
     "alpha": 1.0,
     "n_steps": 875,
-    "epochs": 10,
+    "epochs": 150,
     "batch_size": 256,
     "optimizer": {
       "momentum": 0.9,
@@ -69,7 +68,7 @@
 
   "encoder_mlp_params": {
     "n_steps": 875,
-    "epochs": 5,
+    "epochs": 100,
     "batch_size": 256,
     "optimizer": {
       "learning_rate": 0.001
