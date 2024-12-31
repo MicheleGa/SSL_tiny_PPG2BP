@@ -1,8 +1,17 @@
 import os
 import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
-module_dir = os.path.join(script_dir, '../models') 
-sys.path.insert(0, module_dir)
+
+# List of directories to add to the Python path
+directories_to_add = [
+    '../models',
+    '../data_utilities'
+]
+
+# Insert directories at the beginning of the path (for higher priority)
+for directory in directories_to_add:
+    module_dir = os.path.join(script_dir, directory) 
+    sys.path.insert(0, module_dir) 
 import gc
 import json
 import datetime
@@ -14,9 +23,8 @@ import tensorflow as tf
 from tensorflow.random import set_seed
 from tensorflow.keras import backend as K
 from tensorflow.keras import optimizers
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-from Pretext_DataProcess_mimic_iii import prepare_mimic_iii_dataset
-
+from tensorflow.keras.callbacks import TensorBoard
+from prepare_and_split_mimic_iii import prepare_mimic_iii_dataset
 from barlow_twins import WarmUpCosine, BarlowModel, BarlowLoss
 
 
@@ -24,6 +32,7 @@ from barlow_twins import WarmUpCosine, BarlowModel, BarlowLoss
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # XLA optimization for faster performance(up to 10-15 minutes total time saved)
 tf.config.optimizer.set_jit(True)
+
 
 def main(args):
 
@@ -59,7 +68,6 @@ def main(args):
 
         if config["dataset_name"] == "mimic_iii":
 
-            #train_model(config, train_data, val_data, test_data, r)
             seed(int(config["seed"]))
             set_seed(int(config["seed"]))
 
@@ -76,15 +84,15 @@ def main(args):
             warmup_steps = int(warmup_epochs * steps_per_epoch)
 
             lr_decayed_fn = WarmUpCosine(
-                learning_rate_base=1e-3,
+                learning_rate_base=optimizer_params["learning_rate"],
                 total_steps=epochs * steps_per_epoch,
-                warmup_learning_rate=0.0,
+                warmup_learning_rate=optimizer_params["warmup_learning_rate"],
                 warmup_steps=warmup_steps
             )
             
-            optimizer = optimizers.SGD(learning_rate=lr_decayed_fn, **optimizer_params)
+            optimizer = optimizers.SGD(learning_rate=lr_decayed_fn, momentum=optimizer_params["momentum"])
 
-            tb = TensorBoard(log_dir=os.path.join(config["saved_model_directory"], config["dataset_name"], f'tensorboard_{config["encoder_name"]}_{config["dataset_name"]}_{repeat}'))
+            tb = TensorBoard(log_dir=os.path.join(config["saved_model_directory"], config["dataset_name"], f'tensorboard_{config["encoder_name"]}_{config["dataset_name"]}_{r}'))
 
             bm_model = BarlowModel(config)
             
@@ -98,7 +106,7 @@ def main(args):
                                    verbose=1,
                                    callbacks=[tb])
             
-            bm_model.mobile_net.save_weights(os.path.join(config["saved_model_directory"], config["dataset_name"], f'{config["encoder_name"]}_{config["dataset_name"]}_{repeat}.h5'))
+            bm_model.mobile_net.save_weights(os.path.join(config["saved_model_directory"], config["dataset_name"], f'{config["encoder_name"]}_{config["dataset_name"]}_{r}.h5'))
 
             print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {r + 1}/{repeat}')
             results.append(history.history["loss"])
@@ -112,6 +120,7 @@ def main(args):
 
     results_filename = f'{config["encoder_name"]}_results.pkl'
     joblib.dump([results], os.path.join(config["results_directory"], config["dataset_name"], results_filename))
+
 
 if __name__=='__main__':
 

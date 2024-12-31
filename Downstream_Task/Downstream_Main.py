@@ -1,20 +1,31 @@
 import os
 import sys
 import sys
+import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
-module_dir = os.path.join(script_dir, '../Pretext_Task') 
-sys.path.insert(0, module_dir)
+
+# List of directories to add to the Python path
+directories_to_add = [
+    '../models',
+    '../data_utilities'
+]
+
+# Insert directories at the beginning of the path (for higher priority)
+for directory in directories_to_add:
+    module_dir = os.path.join(script_dir, directory) 
+    sys.path.insert(0, module_dir) 
 import json
 import argparse
 from joblib import dump
-
-from Downstream_Models import CnnLstmModel, Encoder_MLP
-
-from Pretext_DataProcess_mimic_iii import prepare_mimic_iii_dataset
+import tensorflow as tf
+from downstream_models import CnnLstmModel, Encoder_MLP
+from prepare_and_split_mimic_iii import prepare_mimic_iii_dataset
 
 
 # Environment setup
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# XLA optimization for faster performance(up to 10-15 minutes total time saved)
+tf.config.optimizer.set_jit(True)
 
 
 def main(args):

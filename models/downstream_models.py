@@ -14,15 +14,13 @@ from tensorflow.keras.layers import Input, Dense, Dropout, BatchNormalization, L
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
 from tensorflow.keras import backend as K
-from cnn_ae import make_encoder_decoder
+from barlow_twins import BarlowModel
 
 
 class CnnLstmModel():
     def __init__(self, config, train_data, val_data, test_data, repeat):
         
         cnn_lstm_params = config["cnn_lstm_params"]
-        
-        self.rep_dimension = cnn_lstm_params["rep_dimension"]
         self.n_steps = cnn_lstm_params["n_steps"]
         self.epochs = cnn_lstm_params["epochs"]
         self.batch_size = cnn_lstm_params["batch_size"]
@@ -37,6 +35,11 @@ class CnnLstmModel():
         self.val_data = val_data
         self.test_data = test_data
 
+        num_samples_per_split = np.load(os.path.join(config["data_directory"], config["dataset_name"], 'num_samples_per_split.npy'))
+        self.n_train_samples = num_samples_per_split[0]
+        self.n_val_samples = num_samples_per_split[1]
+        self.n_test_samples = num_samples_per_split[2]
+
         self.classifier_name = config["classifier_name"]
         self.dataset_name = config["dataset_name"]      
         self.saved_model_directory = config["saved_model_directory"]
@@ -48,6 +51,8 @@ class CnnLstmModel():
 
     def make_model(self):
 
+        K.clear_session()      
+        
         inputs = Input(shape=(self.n_steps, 1))
         x = Conv1D(32, 64, activation='tanh', kernel_regularizer=l2(0.01), bias_regularizer=l2(0.01))(inputs)
         x = BatchNormalization()(x)
@@ -73,21 +78,25 @@ class CnnLstmModel():
 
         tb = TensorBoard(log_dir=os.path.join(self.saved_model_directory, self.dataset_name, f'tensorboard_{self.classifier_name}_{self.dataset_name}_{self.repeat}'))
 
-        train_dataset = self.train_data[0]
-        len_train_dataset = self.train_data[1]
-        val_dataset = self.val_data[0]
-        len_val_dataset = self.val_data[1]
-
-        history = model.fit(train_dataset,
-                            steps_per_epoch=len_train_dataset // self.batch_size,
-                            validation_data=val_dataset,
-                            validation_steps=len_val_dataset // self.batch_size,
-                            epochs=self.epochs,
-                            verbose=1,
-                            callbacks=[cp, es, tb])
-
-        hs_info = [history.history]
-
+        model.fit(self.train_data,
+                  steps_per_epoch=self.n_train_samples // self.batch_size,
+                  validation_data=self.val_data,
+                  validation_steps=self.n_val_samples // self.batch_size,
+                  epochs=self.epochs,
+                  verbose=1,
+                  callbacks=[cp, es, tb])
+        
+        total_sbp_mae = []
+        total_dbp_mae = []
+        val_dataset_iter = iter(self.val_data)
+        for _ in range(int(self.n_val_samples // self.batch_size)):
+            ppg, bp = val_dataset_iter.next()
+            prediction = model(ppg)
+            total_sbp_mae.append(mean_absolute_error(prediction[:, 0].numpy().squeeze(), bp[0].numpy()))
+            total_dbp_mae.append(mean_absolute_error(prediction[:, 1].numpy().squeeze(), bp[1].numpy()))
+            
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with val SBP MAE {np.mean(total_sbp_mae)} \u00B1 {np.std(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)} \u00B1 {np.std(total_dbp_mae)}')
+        
     
     def evaluation(self):
 
@@ -95,21 +104,18 @@ class CnnLstmModel():
         model = self.make_model()
         model.load_weights(model_path)
 
-        test_dataset = self.test_data[0]
-        len_test_dataset = self.test_data[1]
-        
         total_sbp_mae = []
         total_dbp_mae = []
-        test_dataset_iter = iter(test_dataset)
-        for _ in range(int(len_test_dataset // self.batch_size)):
+        test_dataset_iter = iter(self.test_data)
+        for _ in range(int(self.n_test_samples // self.batch_size)):
             ppg, bp = test_dataset_iter.next()
             prediction = model(ppg)
             total_sbp_mae.append(mean_absolute_error(prediction[:, 0].numpy().squeeze(), bp[0].numpy()))
             total_dbp_mae.append(mean_absolute_error(prediction[:, 1].numpy().squeeze(), bp[1].numpy()))
             
-        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with test SBP MAE {np.mean(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)}')
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with test SBP MAE {np.mean(total_sbp_mae)} \u00B1 {np.std(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)} \u00B1 {np.std(total_dbp_mae)}')
         
-        ppg, _ = next(iter(test_dataset))
+        ppg, _ = next(iter(self.test_data))
         sample = ppg[0, :].numpy().reshape(1, self.n_steps, 1)
 
         # Calculate total parameters
@@ -138,8 +144,6 @@ class Encoder_MLP():
     def __init__(self, config, train_data, val_data, test_data, repeat):
         
         encoder_mlp_params = config["encoder_mlp_params"]
-        
-        self.rep_dimension = encoder_mlp_params["rep_dimension"]
         self.n_steps = encoder_mlp_params["n_steps"]
         self.epochs = encoder_mlp_params["epochs"]
         self.batch_size = encoder_mlp_params["batch_size"]
@@ -159,6 +163,11 @@ class Encoder_MLP():
         self.val_data = val_data
         self.test_data = test_data
 
+        num_samples_per_split = np.load(os.path.join(config["data_directory"], config["dataset_name"], 'num_samples_per_split.npy'))
+        self.n_train_samples = num_samples_per_split[0]
+        self.n_val_samples = num_samples_per_split[1]
+        self.n_test_samples = num_samples_per_split[2]
+
         self.encoder_name = config["encoder_name"]
         self.classifier_name = config["classifier_name"]
         self.dataset_name = config["dataset_name"]      
@@ -167,10 +176,9 @@ class Encoder_MLP():
 
         print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Restoring {self.encoder_name} ...')
 
-        model_path = os.path.join(self.saved_model_directory, self.dataset_name, f'{self.encoder_name}_{self.dataset_name}_0.h5') 
-        model = make_encoder_decoder(config) 
-        model.load_weights(model_path)
-        encoder = model.get_layer('encoder')
+        encoder_path = os.path.join(self.saved_model_directory, self.dataset_name, f'{self.encoder_name}_{self.dataset_name}_0.h5') 
+        encoder = BarlowModel(config).mobile_net
+        encoder.load_weights(encoder_path)
         encoder.trainable = False
         self.encoder = encoder
 
@@ -179,11 +187,9 @@ class Encoder_MLP():
     def make_model(self):   
                 
         K.clear_session()        
-        inputs = Input(shape=(self.n_steps, 1))
-        
-        x = self.encoder(inputs)
-        x = Flatten()(x)
 
+        inputs = Input(shape=(self.n_steps, 1))
+        x = self.encoder(inputs)
         outputs = Dense(2, activation='linear')(x)
 
         return Model(inputs=inputs, outputs=outputs)
@@ -203,20 +209,25 @@ class Encoder_MLP():
 
         tb = TensorBoard(log_dir=os.path.join(self.saved_model_directory, self.dataset_name, f'tensorboard_{self.encoder_name}+{self.classifier_name}_{self.dataset_name}_{self.repeat}'))
 
-        train_dataset = self.train_data[0]
-        len_train_dataset = self.train_data[1]
-        val_dataset = self.val_data[0]
-        len_val_dataset = self.val_data[1]
+        model.fit(self.train_data,
+                  steps_per_epoch=self.n_train_samples // self.batch_size,
+                  validation_data=self.val_data,
+                  validation_steps=self.n_val_samples // self.batch_size,
+                  epochs=self.epochs,
+                  verbose=1,
+                  callbacks=[cp, es, tb])
+        
+        total_sbp_mae = []
+        total_dbp_mae = []
+        val_dataset_iter = iter(self.val_data)
+        for _ in range(int(self.n_val_samples // self.batch_size)):
+            ppg, bp = val_dataset_iter.next()
+            prediction = model(ppg)
+            total_sbp_mae.append(mean_absolute_error(prediction[:, 0].numpy().squeeze(), bp[0].numpy()))
+            total_dbp_mae.append(mean_absolute_error(prediction[:, 1].numpy().squeeze(), bp[1].numpy()))
+            
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with val SBP MAE {np.mean(total_sbp_mae)} \u00B1 {np.std(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)} \u00B1 {np.std(total_dbp_mae)}')
 
-        history = model.fit(train_dataset,
-                            steps_per_epoch=len_train_dataset // self.batch_size,
-                            validation_data=val_dataset,
-                            validation_steps=len_val_dataset // self.batch_size,
-                            epochs=self.epochs,
-                            verbose=1,
-                            callbacks=[cp, es, tb])
-
-        hs_info = [history.history]
     
     def evaluation(self):
 
@@ -224,21 +235,18 @@ class Encoder_MLP():
         model = self.make_model()
         model.load_weights(model_path)
 
-        test_dataset = self.test_data[0]
-        len_test_dataset = self.test_data[1]
-        
         total_sbp_mae = []
         total_dbp_mae = []
-        test_dataset_iter = iter(test_dataset)
-        for _ in range(int(len_test_dataset // self.batch_size)):
+        test_dataset_iter = iter(self.test_data)
+        for _ in range(int(self.n_test_samples // self.batch_size)):
             ppg, bp = test_dataset_iter.next()
             prediction = model(ppg)
             total_sbp_mae.append(mean_absolute_error(prediction[:, 0].numpy().squeeze(), bp[0].numpy()))
             total_dbp_mae.append(mean_absolute_error(prediction[:, 1].numpy().squeeze(), bp[1].numpy()))
             
-        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with test SBP MAE {np.mean(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)}')
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: End of run {self.repeat + 1}/{self.total_repeats} with test SBP MAE {np.mean(total_sbp_mae)} \u00B1 {np.std(total_sbp_mae)} and DBP MAE {np.mean(total_dbp_mae)} \u00B1 {np.std(total_dbp_mae)}')
         
-        ppg, _ = next(iter(test_dataset))
+        ppg, _ = next(iter(self.test_data))
         sample = ppg[0, :].numpy().reshape(1, self.n_steps, 1)
 
         # Calculate total parameters
@@ -260,4 +268,4 @@ class Encoder_MLP():
         K.clear_session()
         tf.compat.v1.reset_default_graph()
         
-        return  np.mean(total_sbp_mae), np.mean(total_dbp_mae), memory_usage_mb, inference_latency       
+        return  np.mean(total_sbp_mae), np.mean(total_dbp_mae), memory_usage_mb, inference_latency      

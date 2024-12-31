@@ -20,23 +20,25 @@
     },
   
     "prepare_datasets_params": {
-      "n_input": 1000,
-      "win_len": 8,
+      "n_input": 875,
+      "win_len": 7,
       "overlap": 0.5,
       "signal_freq": 125,
       "filter_order": 2
     },
+    
     "encoder_params": {
       "rep_dimension": 125,
       "n_dense_units": 512,
       "n_dense_layers": 2,
       "alpha": 1.0,
-      "depth": 3,
-      "n_steps": 1000,
+      "n_steps": 875,
       "epochs": 10,
-      "batch_size": 128,
+      "batch_size": 256,
       "optimizer": {
-        "momentum": 0.9
+        "momentum": 0.9,
+        "learning_rate": 0.001,
+        "warmup_learning_rate": 0.0
       }
     }
   }
