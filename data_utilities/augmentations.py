@@ -15,10 +15,10 @@ class Augmentation(Layer):
           will be run.
     """
 
-    def __init__(self):
+    def __init__(self, seed):
         super().__init__()
+        self.seed = seed
 
-    @tf.function
     def random_execute(self, prob: float) -> bool:
         """random_execute function.
 
@@ -30,48 +30,54 @@ class Augmentation(Layer):
             returns true or false based on the probability.
         """
 
-        return tf.random.uniform([], minval=0, maxval=1) < prob
+        return tf.random.uniform([], minval=0, maxval=1, seed=self.seed) < prob
 
 
 class Jitter(Augmentation):
-    def __init__(self, sigma=0.03, n_input=875):
-        super().__init__()
+    def __init__(self, seed, sigma=0.05):
+        super().__init__(seed)
+        self.seed = seed
         self.sigma = sigma
-        self.n_input = n_input
 
-    def call(self, inputs, prob=0.1):
+    def call(self, inputs, prob=0.5):
         if self.random_execute(prob=prob):
-            noise = tf.random.normal(shape=(self.n_input,), mean=0.0, stddev=self.sigma)
+            noise = tf.random.normal(shape=tf.shape(inputs), mean=0.0, stddev=self.sigma, seed=self.seed)
             return inputs + noise
         else:
             return inputs
 
 
 class Scaling(Augmentation):
-    def __init__(self, sigma=0.1, n_input=875):
-        super().__init__()
+    def __init__(self, seed, sigma=0.1):
+        super().__init__(seed)
+        self.seed = seed
         self.sigma = sigma
-        self.n_input = n_input
 
-    def call(self, inputs, prob=0.1):
+    def call(self, inputs, prob=0.5):
         if self.random_execute(prob=prob):
-            factor = tf.random.normal(shape=(self.n_input,), mean=1.0, stddev=self.sigma)
+            factor = tf.random.normal(shape=tf.shape(inputs), mean=1.0, stddev=self.sigma, seed=self.seed)
             return inputs * factor
         else:
             return inputs
 
 
-class Rotation(Augmentation):
-    def __init__(self, n_input=875):
-        super().__init__()
-        self.n_input = n_input
+class Flip(Augmentation):
+    def __init__(self, seed):
+        super(Flip, self).__init__(seed)
+        self.seed = seed
 
-    def call(self, inputs, prob=0.1):
+    def call(self, inputs, prob=0.5):
         if self.random_execute(prob=prob):
-            flip = tf.random.uniform(shape=(self.n_input,), minval=-1, maxval=1, dtype=tf.int32)
-            flip = tf.cast(flip, dtype=tf.float32)
-            rotate_axis = tf.random.shuffle(tf.range(self.n_input))
-            return flip * tf.gather(inputs, rotate_axis)
+            # Randomly flip each feature
+            flips = tf.random.uniform(shape=tf.shape(inputs), minval=-1.0, maxval=1.0, seed=self.seed)
+            flips = tf.where(flips > 0.0, tf.ones_like(flips), -tf.ones_like(flips))
+
+            # Randomly permute feature order (N.B. input is (n_inputs,))
+            rotate_axis = tf.random.shuffle(tf.range(tf.shape(inputs)[0]), seed=self.seed)
+            rotated_inputs = tf.gather(inputs, rotate_axis, axis=0)
+
+            # Apply flips
+            return flips * rotated_inputs
         else:
             return inputs
     
@@ -92,14 +98,14 @@ class RandomAugmentor(Model):
         call: chains layers in pipeline together
     """
 
-    def __init__(self, n_input):
+    def __init__(self, seed):
         super().__init__()
-        self.jitter = Jitter(n_input=n_input)
-        self.scaling = Scaling(n_input=n_input)
-        self.rotation = Rotation(n_input=n_input)
+        self.jitter = Jitter(seed)
+        self.scaling = Scaling(seed)
+        self.flip = Flip(seed)
 
     def call(self, x: tf.Tensor) -> tf.Tensor:
         x = self.jitter(x)
         x = self.scaling(x)
-        x = self.rotation(x)
+        x = self.flip(x)
         return x

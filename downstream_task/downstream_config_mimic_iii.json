@@ -1,13 +1,13 @@
 {
   "dataset_name": "mimic_iii",
   "encoder_name": "MN_BT",
-  "classifier_name": "CNN-LSTM",
+  "classifier_name": "MLP",
   "seed": 42,
   "folders": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   "test_percentage": 0.25,
   "val_percentage": 0.25,
   "repeat": 1,
-  "n_cores": 12,
+  "n_cores": 10,
   
   "data_directory": "../dataset",
   "results_directory": "../results",

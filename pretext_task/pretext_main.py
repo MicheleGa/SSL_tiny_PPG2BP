@@ -120,6 +120,7 @@ def main(args):
 
     results_filename = f'{config["encoder_name"]}_results.pkl'
     joblib.dump([results], os.path.join(config["results_directory"], config["dataset_name"], results_filename))
+    print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Completed self-supervised training on {config["dataset_name"]} dataset ...')
 
 
 if __name__=='__main__':
@@ -130,5 +131,17 @@ if __name__=='__main__':
     parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='pretext_config_mimic_iii.json')
     
     args = parser.parse_args()
-    
+
+    # Get a list of available GPUs
+    gpus = tf.config.list_physical_devices('GPU')
+
+    # Select the desired GPU (e.g., the first GPU)
+    gpu_to_use = gpus[0] 
+
+    # Make the selected GPU visible to TensorFlow
+    tf.config.set_visible_devices([gpu_to_use], 'GPU')
+
+    # Verify that only the selected GPU is visible
+    print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Using GPU {tf.config.list_physical_devices("GPU")}') 
+
     main(args)

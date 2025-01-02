@@ -114,7 +114,7 @@ def prepare_mimic_iii_dataset(config, training_persons=None, downstream_task=Fal
         val_set = create_tf_dataset(config, split_name='val', downstream_task=downstream_task, classifier_name=classifier_name)
         test_set = create_tf_dataset(config, split_name='test', downstream_task=downstream_task, classifier_name=classifier_name)
     else:
-        bt_augmentor = RandomAugmentor(params["n_input"])
+        bt_augmentor = RandomAugmentor(config["seed"])
         train_set = create_tf_dataset(config, split_name='train', random_augmentor=bt_augmentor)
         val_set = None
         test_set = None         

@@ -1,7 +1,5 @@
 import os
 import sys
-import sys
-import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # List of directories to add to the Python path
@@ -14,6 +12,7 @@ directories_to_add = [
 for directory in directories_to_add:
     module_dir = os.path.join(script_dir, directory) 
     sys.path.insert(0, module_dir) 
+import datetime
 import json
 import argparse
 from joblib import dump
@@ -42,11 +41,13 @@ def main(args):
             # Cnn-Lstm Model
             results = [CnnLstmModel(config, train_data, val_data, test_data, rep).evaluation() for rep in range(config["repeat"])]
             dump([results], os.path.join(config["results_directory"], config["dataset_name"], f'{config["classifier_name"]}_results.pkl'))
+            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Completed {config["classifier_name"]} training on {config["dataset_name"]} dataset ...')
 
         elif config["classifier_name"] == 'MLP':
             # Encoder_MLP Model
             results = [Encoder_MLP(config, train_data, val_data, test_data, rep).evaluation() for rep in range(config["repeat"])]
             dump([results], os.path.join(config["results_directory"], config["dataset_name"], f'{config["encoder_name"]}+{config["classifier_name"]}_results.pkl'))
+            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Completed {config["classifier_name"]} training with {config["encoder_name"]} on {config["dataset_name"]} dataset ...')
 
         else:
             raise ValueError("Inexistent classifier name ...")
@@ -63,6 +64,18 @@ if __name__=='__main__':
     parser.add_argument('--config_file_path', nargs='?', type=str, help='path to the configuration file (json)', default='downstream_config_mimic_iii.json')
     
     args = parser.parse_args()
+
+    # Get a list of available GPUs
+    gpus = tf.config.list_physical_devices('GPU')
+
+    # Select the desired GPU (e.g., the first GPU)
+    gpu_to_use = gpus[0] 
+
+    # Make the selected GPU visible to TensorFlow
+    tf.config.set_visible_devices([gpu_to_use], 'GPU')
+
+    # Verify that only the selected GPU is visible
+    print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Using GPU {tf.config.list_physical_devices("GPU")}') 
     
     main(args)
 
