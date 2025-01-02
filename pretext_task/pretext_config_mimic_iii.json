@@ -8,9 +8,9 @@
     "repeat": 1,
     "n_cores": 10,
       
-    "data_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/dataset",
-    "results_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/results",
-    "saved_model_directory": "/home/michele/Documents/SSL_tiny_PPG2BP/saved_models",
+    "data_directory": "../dataset",
+    "results_directory": "../results",
+    "saved_model_directory": "../saved_models",
 
     "valid_bp_ranges": {
         "up_sbp" : 220,
