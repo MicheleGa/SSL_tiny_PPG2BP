@@ -1,7 +1,7 @@
 {
   "dataset_name": "mimic_iii",
   "encoder_name": "MN_BT",
-  "classifier_name": "MLP",
+  "classifier_name": "MN_MLP",
   "seed": 42,
   "folders": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
   "test_percentage": 0.25,
@@ -71,7 +71,35 @@
     "epochs": 150,
     "batch_size": 256,
     "optimizer": {
-      "learning_rate": 0.001
+      "momentum": 0.9,
+      "learning_rate": 0.001,
+      "warmup_learning_rate": 0.0
+    },
+    "early_stopping_params": {
+      "monitor": "val_loss",  
+      "restore_best_weights": 1, 
+      "mode": "min", 
+      "verbose": 1,
+      "min_delta": 1,
+      "patience": 30
+    },
+    "model_checkpoint_params": {
+      "monitor": "val_loss", 
+      "save_best_only": 1, 
+      "mode": "min", 
+      "verbose": 1
+    }
+  },
+
+  "mn_mlp_params": {
+    "alpha": 1.0,
+    "n_steps": 875,
+    "epochs": 150,
+    "batch_size": 256,
+    "optimizer": {
+      "momentum": 0.9,
+      "learning_rate": 0.001,
+      "warmup_learning_rate": 0.0
     },
     "early_stopping_params": {
       "monitor": "val_loss",  

@@ -17,7 +17,7 @@ import json
 import argparse
 from joblib import dump
 import tensorflow as tf
-from downstream_models import CnnLstmModel, Encoder_MLP
+from downstream_models import CnnLstmModel, Encoder_MLP, MN_MLP
 from prepare_and_split_mimic_iii import prepare_mimic_iii_dataset
 
 
@@ -49,9 +49,14 @@ def main(args):
             dump([results], os.path.join(config["results_directory"], config["dataset_name"], f'{config["encoder_name"]}+{config["classifier_name"]}_results.pkl'))
             print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Completed {config["classifier_name"]} training with {config["encoder_name"]} on {config["dataset_name"]} dataset ...')
 
+        elif config["classifier_name"] == 'MN_MLP':
+            # MobileNet Model
+            results = [MN_MLP(config, train_data, val_data, test_data, rep).evaluation() for rep in range(config["repeat"])]
+            dump([results], os.path.join(config["results_directory"], config["dataset_name"], f'{config["encoder_name"]}+{config["classifier_name"]}_results.pkl'))
+            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Completed {config["classifier_name"]} training with {config["encoder_name"]} on {config["dataset_name"]} dataset ...')
+
         else:
             raise ValueError("Inexistent classifier name ...")
-        
         
     else:
         raise ValueError("Inexistent dataset name ...")
@@ -72,10 +77,10 @@ if __name__=='__main__':
     gpu_to_use = gpus[0] 
 
     # Make the selected GPU visible to TensorFlow
-    tf.config.set_visible_devices([gpu_to_use], 'GPU')
+    tf.config.set_visible_devices(gpu_to_use, 'GPU')
 
     # Verify that only the selected GPU is visible
-    print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Using GPU {tf.config.list_physical_devices("GPU")}') 
+    print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}: Using GPU {tf.config.list_logical_devices("GPU")}') 
     
     main(args)
 

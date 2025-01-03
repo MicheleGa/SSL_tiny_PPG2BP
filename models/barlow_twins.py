@@ -57,6 +57,15 @@ class WarmUpCosine(tf.keras.optimizers.schedules.LearningRateSchedule):
             step > self.total_steps, 0.0, learning_rate, name="learning_rate"
         )
     
+    def get_config(self):
+        """Returns the config of the learning rate schedule as a Python dictionary."""
+        return {
+            'learning_rate_base': self.learning_rate_base,
+            'total_steps': self.total_steps,
+            'warmup_learning_rate': self.warmup_learning_rate,
+            'warmup_steps': self.warmup_steps
+        }
+    
 
 class BarlowLoss(Loss):
     """BarlowLoss class.

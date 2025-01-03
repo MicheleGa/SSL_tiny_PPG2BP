@@ -44,6 +44,10 @@ def create_tf_dataset(config, split_name='dataset', downstream_task=False, class
         elif classifier_name == 'MLP':
             params = config["encoder_mlp_params"]
             n_input = params["n_steps"] 
+            batch_size = params["batch_size"]
+        elif classifier_name == 'MN_MLP':
+            params = config["mn_mlp_params"]
+            n_input = params["n_steps"] 
             batch_size = params["batch_size"] 
         else:
             raise ValueError("Inexistent classifier name ...")
