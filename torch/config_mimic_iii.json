@@ -1,0 +1,47 @@
+{
+    "dataset_name": "mimic_iii",
+    "model_name": "mobile_net_v3_small",
+    "seed": 42,
+    "folders": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "test_percentage": 0.25,
+    "val_percentage": 0.25,
+    "batch_size": 256,
+    "epochs": 3,
+    "repeat": 1,
+    "n_cores": 10,
+    "gpu_id": 0,
+      
+    "data_directory": "./dataset",
+    "results_directory": "./results",
+    "saved_models_directory": "./saved_models",
+
+    "valid_bp_ranges": {
+        "up_sbp" : 220,
+        "low_sbp" : 60,
+        "up_dbp" : 140,
+        "low_dbp" : 30
+    },
+  
+    "prepare_datasets_params": {
+      "n_input": 875,
+      "win_len": 7,
+      "overlap": 0.5,
+      "signal_freq": 125,
+      "filter_order": 4
+    },
+
+    "optimizer": {
+      "lr": 0.001,
+      "l2norm": 0.0001
+    },
+
+    "lr_scheduler": {
+      "lrsched_step": "5, 10, 15, 20, 40", 
+      "lrsched_gamma": 0.5
+    },
+  
+    "early_stopping_params": {
+      "es_patience": 10, 
+      "es_min_delta": 0.01
+    }
+  }
